@@ -2,12 +2,12 @@ package praktikum.tests;
 
 import io.qameta.allure.*;
 import io.qameta.allure.junit4.DisplayName;
+import io.restassured.response.Response;
 import org.junit.Test;
 import praktikum.BaseTest;
 import praktikum.client.UserClient;
 import praktikum.models.User;
 import praktikum.utils.UserGenerator;
-import io.restassured.response.Response;
 
 import static org.apache.http.HttpStatus.*;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -27,15 +27,23 @@ public class UserTests extends BaseTest {
 
         User user = UserGenerator.randomUser();
 
-        Response response = userClient.createUser(user);
+        String token = null;
 
-        response.then()
-                .statusCode(SC_OK)
-                .body("success", equalTo(true))
-                .body("accessToken", notNullValue());
+        try {
+            Response response = userClient.createUser(user);
 
-        String token = response.path("accessToken");
-        userClient.deleteUser(token);
+            response.then()
+                    .statusCode(SC_OK)
+                    .body("success", equalTo(true))
+                    .body("accessToken", notNullValue());
+
+            token = response.path("accessToken");
+
+        } finally {
+            if (token != null) {
+                userClient.deleteUser(token);
+            }
+        }
     }
 
     @Test
@@ -45,13 +53,23 @@ public class UserTests extends BaseTest {
 
         User user = UserGenerator.randomUser();
 
-        userClient.createUser(user);
+        String token = null;
 
-        Response response = userClient.createUser(user);
+        try {
+            Response createResponse = userClient.createUser(user);
+            token = createResponse.path("accessToken");
 
-        response.then()
-                .statusCode(SC_CONFLICT)
-                .body("message", equalTo("User already exists"));
+            Response response = userClient.createUser(user);
+
+            response.then()
+                    .statusCode(SC_CONFLICT)
+                    .body("message", equalTo("User already exists"));
+
+        } finally {
+            if (token != null) {
+                userClient.deleteUser(token);
+            }
+        }
     }
 
     @Test

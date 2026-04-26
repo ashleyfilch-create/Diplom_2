@@ -1,5 +1,6 @@
 package praktikum.client;
 
+import io.qameta.allure.Step;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import praktikum.models.Order;
@@ -10,6 +11,7 @@ import static praktikum.utils.ApiConstants.ORDERS;
 
 public class OrderClient {
 
+    @Step("Создание заказа")
     public Response createOrder(Order order, String token) {
         var request = given()
                 .contentType(ContentType.JSON)
