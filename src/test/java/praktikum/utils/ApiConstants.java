@@ -1,4 +1,4 @@
-package praktikum.constants;
+package praktikum.utils;
 
 public class ApiConstants {
 

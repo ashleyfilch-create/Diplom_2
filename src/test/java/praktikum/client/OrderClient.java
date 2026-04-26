@@ -2,26 +2,23 @@ package praktikum.client;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
 import praktikum.models.Order;
 
 import static io.restassured.RestAssured.given;
-import static praktikum.constants.ApiConstants.AUTH;
-import static praktikum.constants.ApiConstants.ORDERS;
+import static praktikum.utils.ApiConstants.AUTH;
+import static praktikum.utils.ApiConstants.ORDERS;
 
 public class OrderClient {
 
     public Response createOrder(Order order, String token) {
-
-        RequestSpecification spec = given()
+        var request = given()
                 .contentType(ContentType.JSON)
-                .body(order)
-                .log().all();
+                .body(order);
 
         if (token != null) {
-            spec.header(AUTH, "Bearer " + token);
+            request.header(AUTH, token);
         }
 
-        return spec.when().post(ORDERS);
+        return request.when().post(ORDERS);
     }
 }
