@@ -23,7 +23,7 @@ public class UserTests extends BaseTest {
     @Test
     @Story("Create unique user")
     @Description("User with unique email should be created successfully")
-    public void createUniqueUser_success() {
+    public void createUniqueUserSuccess() {
 
         User user = UserGenerator.randomUser();
 
@@ -41,7 +41,7 @@ public class UserTests extends BaseTest {
     @Test
     @Story("Create existing user")
     @Description("Creating already registered user should return 409")
-    public void createExistingUser_fails() {
+    public void createExistingUserFails() {
 
         User user = UserGenerator.randomUser();
 
@@ -57,7 +57,7 @@ public class UserTests extends BaseTest {
     @Test
     @Story("Create user without required field")
     @Description("User without email should return 400 Bad Request")
-    public void createUserWithoutEmail_fails() {
+    public void createUserWithoutEmailFails() {
 
         User user = new User(
                 null,

@@ -27,7 +27,7 @@ public class OrderTests extends BaseTest {
     @Test
     @Story("Create order with authorization")
     @Description("User with valid token can create order successfully")
-    public void createOrder_withAuth_success() {
+    public void createOrderWithAuthSuccess() {
 
         User user = UserGenerator.randomUser();
         userClient.createUser(user);
@@ -48,7 +48,7 @@ public class OrderTests extends BaseTest {
     @Test
     @Story("Create order without authorization")
     @Description("Request without auth should return 401")
-    public void createOrder_withoutAuth_fail() {
+    public void createOrderWithoutAuthFail() {
 
         Order order = new Order(List.of("ingredient1", "ingredient2"));
 
@@ -62,7 +62,7 @@ public class OrderTests extends BaseTest {
     @Test
     @Story("Create order without ingredients")
     @Description("Order without ingredients should return 400")
-    public void createOrder_withoutIngredients_fail() {
+    public void createOrderWithoutIngredientsFail() {
 
         User user = UserGenerator.randomUser();
         userClient.createUser(user);
@@ -84,7 +84,7 @@ public class OrderTests extends BaseTest {
     @Test
     @Story("Create order with invalid ingredient hash")
     @Description("Invalid ingredient hash should return 400 Bad Request")
-    public void createOrder_invalidHash_fail() {
+    public void createOrderInvalidHashFail() {
 
         User user = UserGenerator.randomUser();
         userClient.createUser(user);

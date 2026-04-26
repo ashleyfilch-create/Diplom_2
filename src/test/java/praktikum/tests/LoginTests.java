@@ -23,7 +23,7 @@ public class LoginTests extends BaseTest {
     @Test
     @Story("Successful login")
     @Description("Login with valid credentials should return access token")
-    public void login_success() {
+    public void loginSuccess() {
 
         User user = UserGenerator.randomUser();
 
@@ -42,7 +42,7 @@ public class LoginTests extends BaseTest {
     @Test
     @Story("Login with invalid credentials")
     @Description("Login with wrong credentials should return 401 and error message")
-    public void login_wrongCredentials_fail() {
+    public void loginWrongCredentials_fail() {
 
         User user = UserGenerator.randomUser();
 
