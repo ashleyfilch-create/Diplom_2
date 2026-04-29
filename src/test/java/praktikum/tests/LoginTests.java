@@ -2,6 +2,7 @@ package praktikum.tests;
 
 import io.qameta.allure.*;
 import io.qameta.allure.junit4.DisplayName;
+import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,11 +10,10 @@ import praktikum.BaseTest;
 import praktikum.client.UserClient;
 import praktikum.models.User;
 import praktikum.utils.UserGenerator;
-import io.restassured.response.Response;
 
 import static org.apache.http.HttpStatus.*;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 
 @Epic("Stellar Burgers API")
 @Feature("Authentication")
@@ -23,7 +23,7 @@ public class LoginTests extends BaseTest {
     private final UserClient userClient = new UserClient();
 
     private User user;
-    private String token;
+    private String accessToken;
 
     @Before
     public void setUp() {
@@ -33,8 +33,8 @@ public class LoginTests extends BaseTest {
 
     @After
     public void tearDown() {
-        if (token != null) {
-            userClient.deleteUser(token);
+        if (accessToken != null) {
+            userClient.deleteUser(accessToken);
         }
     }
 
@@ -48,7 +48,7 @@ public class LoginTests extends BaseTest {
                 .statusCode(SC_OK)
                 .body("accessToken", notNullValue());
 
-        token = response.path("accessToken");
+        accessToken = response.path("accessToken");
     }
 
     @Test

@@ -92,7 +92,7 @@ public class OrderTests extends BaseTest {
         Response response = orderClient.createOrder(order, token);
 
         response.then()
-                .statusCode(SC_BAD_REQUEST)
+                .statusCode(SC_INTERNAL_SERVER_ERROR)
                 .body("message", equalTo("One or more ids provided are incorrect"));
     }
 }

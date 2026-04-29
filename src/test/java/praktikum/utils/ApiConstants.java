@@ -4,7 +4,7 @@ public class ApiConstants {
 
     // Base URL
     public static final String BASE_URL =
-            "https://stellarburgers.education-services.ru/";
+            "https://stellarburgers.education-services.ru";
 
     // Endpoints
     public static final String REGISTER = "/api/auth/register";
