@@ -2,6 +2,8 @@ package praktikum.tests;
 
 import io.qameta.allure.*;
 import io.qameta.allure.junit4.DisplayName;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import praktikum.BaseTest;
 import praktikum.client.OrderClient;
@@ -24,16 +26,28 @@ public class OrderTests extends BaseTest {
     private final OrderClient orderClient = new OrderClient();
     private final UserClient userClient = new UserClient();
 
-    @Test
-    @Story("Create order with authorization")
-    @Description("User with valid token can create order successfully")
-    public void createOrderWithAuthSuccess() {
+    private User user;
+    private String token;
 
-        User user = UserGenerator.randomUser();
+    @Before
+    public void setUp() {
+        user = UserGenerator.randomUser();
         userClient.createUser(user);
 
         Response loginResponse = userClient.loginUser(user);
-        String token = loginResponse.path("accessToken");
+        token = loginResponse.path("accessToken");
+    }
+
+    @After
+    public void tearDown() {
+        if (token != null) {
+            userClient.deleteUser(token);
+        }
+    }
+
+    @Test
+    @Story("Create order with authorization")
+    public void createOrderWithAuthSuccess() {
 
         Order order = new Order(List.of("ingredient1", "ingredient2"));
 
@@ -41,13 +55,10 @@ public class OrderTests extends BaseTest {
 
         response.then()
                 .statusCode(SC_OK);
-
-        userClient.deleteUser(token);
     }
 
     @Test
     @Story("Create order without authorization")
-    @Description("Request without auth should return 401")
     public void createOrderWithoutAuthFail() {
 
         Order order = new Order(List.of("ingredient1", "ingredient2"));
@@ -61,14 +72,7 @@ public class OrderTests extends BaseTest {
 
     @Test
     @Story("Create order without ingredients")
-    @Description("Order without ingredients should return 400")
     public void createOrderWithoutIngredientsFail() {
-
-        User user = UserGenerator.randomUser();
-        userClient.createUser(user);
-
-        Response loginResponse = userClient.loginUser(user);
-        String token = loginResponse.path("accessToken");
 
         Order order = new Order(List.of());
 
@@ -77,20 +81,11 @@ public class OrderTests extends BaseTest {
         response.then()
                 .statusCode(SC_BAD_REQUEST)
                 .body("message", equalTo("Ingredient ids must be provided"));
-
-        userClient.deleteUser(token);
     }
 
     @Test
     @Story("Create order with invalid ingredient hash")
-    @Description("Invalid ingredient hash should return 400 Bad Request")
     public void createOrderInvalidHashFail() {
-
-        User user = UserGenerator.randomUser();
-        userClient.createUser(user);
-
-        Response loginResponse = userClient.loginUser(user);
-        String token = loginResponse.path("accessToken");
 
         Order order = new Order(List.of("invalid_hash"));
 
@@ -99,7 +94,5 @@ public class OrderTests extends BaseTest {
         response.then()
                 .statusCode(SC_BAD_REQUEST)
                 .body("message", equalTo("One or more ids provided are incorrect"));
-
-        userClient.deleteUser(token);
     }
 }

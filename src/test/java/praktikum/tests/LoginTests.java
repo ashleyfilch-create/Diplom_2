@@ -2,6 +2,8 @@ package praktikum.tests;
 
 import io.qameta.allure.*;
 import io.qameta.allure.junit4.DisplayName;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import praktikum.BaseTest;
 import praktikum.client.UserClient;
@@ -20,37 +22,59 @@ public class LoginTests extends BaseTest {
 
     private final UserClient userClient = new UserClient();
 
-    @Test
-    @Story("Successful login")
-    @Description("Login with valid credentials should return access token")
-    public void loginSuccess() {
+    private User user;
+    private String token;
 
-        User user = UserGenerator.randomUser();
-
+    @Before
+    public void setUp() {
+        user = UserGenerator.randomUser();
         userClient.createUser(user);
+    }
 
-        Response loginResponse = userClient.loginUser(user);
-
-        loginResponse.then()
-                .statusCode(SC_OK)
-                .body("accessToken", notNullValue());
-
-        String token = loginResponse.path("accessToken");
-        userClient.deleteUser(token);
+    @After
+    public void tearDown() {
+        if (token != null) {
+            userClient.deleteUser(token);
+        }
     }
 
     @Test
-    @Story("Login with invalid credentials")
-    @Description("Login with wrong credentials should return 401 and error message")
-    public void loginWrongCredentials_fail() {
+    @Story("Successful login")
+    public void loginSuccess() {
 
-        User user = UserGenerator.randomUser();
+        Response response = userClient.loginUser(user);
 
-        userClient.createUser(user);
+        response.then()
+                .statusCode(SC_OK)
+                .body("accessToken", notNullValue());
+
+        token = response.path("accessToken");
+    }
+
+    @Test
+    @Story("Login with wrong email")
+    public void loginWrongEmailFail() {
+
+        User wrongUser = new User(
+                "wrong_" + user.getEmail(),
+                user.getPassword(),
+                user.getName()
+        );
+
+        Response response = userClient.loginUser(wrongUser);
+
+        response.then()
+                .statusCode(SC_UNAUTHORIZED)
+                .body("message", equalTo("email or password are incorrect"));
+    }
+
+    @Test
+    @Story("Login with wrong password")
+    public void loginWrongPasswordFail() {
 
         User wrongUser = new User(
                 user.getEmail(),
-                "incorrectPassword",
+                "wrongPassword",
                 user.getName()
         );
 
