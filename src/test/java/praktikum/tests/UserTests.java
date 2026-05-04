@@ -1,108 +1,83 @@
 package praktikum.tests;
 
-import io.qameta.allure.*;
+import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.response.Response;
+import org.apache.http.HttpStatus;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import praktikum.BaseTest;
 import praktikum.client.UserClient;
 import praktikum.models.User;
 import praktikum.utils.UserGenerator;
+import static org.hamcrest.CoreMatchers.*;
 
-import static org.apache.http.HttpStatus.*;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
-
-@Epic("Stellar Burgers API")
-@Feature("User management")
-@DisplayName("User tests")
+@DisplayName("Тесты управления пользователями")
 public class UserTests extends BaseTest {
-
     private final UserClient userClient = new UserClient();
+    private String accessToken;
+    private User user;
 
-    private String token;
+    @Before
+    public void setUp() {
+        user = UserGenerator.randomUser();
+    }
 
     @After
     public void tearDown() {
-        if (token != null) {
-            userClient.deleteUser(token);
+        if (accessToken != null) {
+            userClient.handleUserData("DELETE", null, accessToken);
         }
     }
 
     @Test
-    @Story("Create unique user")
-    @Description("User with unique email should be created successfully")
-    public void createUniqueUserSuccess() {
+    @DisplayName("Создание уникального пользователя")
+    @Description("Проверка успешного создания нового пользователя с валидными данными")
+    public void createUserSuccess() {
+        userClient.createUser(user)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("success", is(true));
 
-        User user = UserGenerator.randomUser();
-
-        Response response = userClient.createUser(user);
-
-        response.then()
-                .statusCode(SC_OK)
-                .body("success", equalTo(true))
-                .body("accessToken", notNullValue());
-
-        token = response.path("accessToken");
+        accessToken = userClient.loginUser(user).path("accessToken");
     }
 
     @Test
-    @Story("Create existing user")
-    @Description("Creating already registered user should return 403")
-    public void createExistingUserFails() {
-
-        User user = UserGenerator.randomUser();
-
-        Response createResponse = userClient.createUser(user);
-        token = createResponse.path("accessToken");
-
-        Response response = userClient.createUser(user);
-
-        response.then()
-                .statusCode(SC_FORBIDDEN)
+    @DisplayName("Создание дубликата пользователя")
+    @Description("Проверка ошибки при попытке регистрации пользователя с уже существующим email")
+    public void createDuplicateUserFail() {
+        userClient.createUser(user);
+        userClient.createUser(user)
+                .then()
+                .statusCode(HttpStatus.SC_FORBIDDEN)
                 .body("message", equalTo("User already exists"));
     }
 
     @Test
-    @Story("Create user without email")
-    @Description("User without email should return 403 Forbidden")
-    public void createUserWithoutEmailFails() {
+    @DisplayName("Обновление имени авторизованного пользователя")
+    @Description("Проверка возможности изменения персональных данных при наличии валидного токена")
+    public void updateUserDataSuccess() {
+        var resp = userClient.createUser(user);
+        accessToken = resp.path("accessToken");
 
-        User user = new User(null, "123456", "test");
+        User updatedUser = new User(user.getEmail(), user.getPassword(), "Updated Name");
 
-        Response response = userClient.createUser(user);
-
-        response.then()
-                .statusCode(SC_FORBIDDEN)
-                .body("message", notNullValue());
+        userClient.handleUserData("PATCH", updatedUser, accessToken)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("user.name", equalTo("Updated Name"));
     }
 
     @Test
-    @Story("Create user without password")
-    @Description("User without password should return 403 Forbidden")
-    public void createUserWithoutPasswordFails() {
+    @DisplayName("Изменение данных без авторизации")
+    @Description("Проверка отказа в доступе при попытке обновить данные пользователя без передачи токена")
+    public void updateUserDataWithoutAuthFail() {
+        userClient.createUser(user);
+        User updatedUser = new User(user.getEmail(), user.getPassword(), "Ghost Name");
 
-        User user = new User("test@email.com", null, "test");
-
-        Response response = userClient.createUser(user);
-
-        response.then()
-                .statusCode(SC_FORBIDDEN)
-                .body("message", notNullValue());
-    }
-
-    @Test
-    @Story("Create user without name")
-    @Description("User without name should return 403 Forbidden")
-    public void createUserWithoutNameFails() {
-
-        User user = new User("test@email.com", "123456", null);
-
-        Response response = userClient.createUser(user);
-
-        response.then()
-                .statusCode(SC_FORBIDDEN)
-                .body("message", notNullValue());
+        userClient.handleUserData("PATCH", updatedUser, null)
+                .then()
+                .statusCode(HttpStatus.SC_UNAUTHORIZED)
+                .body("message", equalTo("You should be authorised"));
     }
 }

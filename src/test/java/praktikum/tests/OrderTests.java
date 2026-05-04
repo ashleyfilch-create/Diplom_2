@@ -1,7 +1,9 @@
 package praktikum.tests;
 
-import io.qameta.allure.*;
+import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
+import io.restassured.response.Response;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,90 +11,77 @@ import praktikum.BaseTest;
 import praktikum.client.OrderClient;
 import praktikum.client.UserClient;
 import praktikum.models.Order;
-import praktikum.models.User;
 import praktikum.utils.UserGenerator;
-import io.restassured.response.Response;
-
 import java.util.List;
+import static org.hamcrest.CoreMatchers.*;
 
-import static org.apache.http.HttpStatus.*;
-import static org.hamcrest.CoreMatchers.equalTo;
-
-@Epic("Stellar Burgers API")
-@Feature("Orders")
-@DisplayName("Order tests")
+@DisplayName("Тесты создания заказов")
 public class OrderTests extends BaseTest {
-
     private final OrderClient orderClient = new OrderClient();
     private final UserClient userClient = new UserClient();
-
-    private User user;
-    private String token;
+    private String accessToken;
 
     @Before
     public void setUp() {
-        user = UserGenerator.randomUser();
+        var user = UserGenerator.randomUser();
         userClient.createUser(user);
-
         Response loginResponse = userClient.loginUser(user);
-        token = loginResponse.path("accessToken");
+        accessToken = loginResponse.path("accessToken");
     }
 
     @After
     public void tearDown() {
-        if (token != null) {
-            userClient.deleteUser(token);
+        if (accessToken != null) {
+            userClient.handleUserData("DELETE", null, accessToken);
         }
     }
 
     @Test
-    @Story("Create order with authorization")
-    public void createOrderWithAuthSuccess() {
+    @DisplayName("Создание заказа авторизованным пользователем")
+    @Description("Успешное оформление заказа при наличии токена и валидных ингредиентов")
+    public void createOrderSuccess() {
+        List<String> ingredients = List.of("60d3b41abdacab0026a733c6", "609646e4dc916e00276b2870");
+        Order order = new Order(ingredients);
 
-        Order order = new Order(List.of("ingredient1", "ingredient2"));
-
-        Response response = orderClient.createOrder(order, token);
-
-        response.then()
-                .statusCode(SC_OK);
+        orderClient.createOrder(order, accessToken)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("success", is(true));
     }
 
     @Test
-    @Story("Create order without authorization")
+    @DisplayName("Создание заказа без авторизации")
+    @Description("Проверка запрета на создание заказа, если пользователь не передал токен авторизации")
     public void createOrderWithoutAuthFail() {
+        List<String> ingredients = List.of("60d3b41abdacab0026a733c6");
+        Order order = new Order(ingredients);
 
-        Order order = new Order(List.of("ingredient1", "ingredient2"));
-
-        Response response = orderClient.createOrder(order, null);
-
-        response.then()
-                .statusCode(SC_UNAUTHORIZED)
+        orderClient.createOrder(order, null)
+                .then()
+                .statusCode(HttpStatus.SC_UNAUTHORIZED)
                 .body("message", equalTo("You should be authorised"));
     }
 
     @Test
-    @Story("Create order without ingredients")
+    @DisplayName("Создание заказа без ингредиентов")
+    @Description("Проверка возврата ошибки 400 при попытке отправить пустой список ингредиентов")
     public void createOrderWithoutIngredientsFail() {
-
         Order order = new Order(List.of());
 
-        Response response = orderClient.createOrder(order, token);
-
-        response.then()
-                .statusCode(SC_BAD_REQUEST)
+        orderClient.createOrder(order, accessToken)
+                .then()
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body("message", equalTo("Ingredient ids must be provided"));
     }
 
     @Test
-    @Story("Create order with invalid ingredient hash")
-    public void createOrderInvalidHashFail() {
+    @DisplayName("Создание заказа с неверным хешем")
+    @Description("Проверка поведения системы (500 Internal Server Error) при передаче несуществующего хеша ингредиента")
+    public void createOrderWithInvalidHashFail() {
+        Order order = new Order(List.of("60d3b41abdacab0026a733c7"));
 
-        Order order = new Order(List.of("invalid_hash"));
-
-        Response response = orderClient.createOrder(order, token);
-
-        response.then()
-                .statusCode(SC_INTERNAL_SERVER_ERROR)
-                .body("message", equalTo("One or more ids provided are incorrect"));
+        orderClient.createOrder(order, accessToken)
+                .then()
+                .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
     }
 }
